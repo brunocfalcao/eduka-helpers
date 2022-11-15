@@ -1,0 +1,34 @@
+{
+    "name": "brunocfalcao/eduka-helpers",
+    "description": "Eduka helper support",
+    "keywords": [
+        "brunocfalcao"
+    ],
+    "homepage": "https://github.com/brunocfalcao/eduka-helpers",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Bruno Falcão",
+            "email": "bruno.c.falcao@brunofalcao.me",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "illuminate/contracts": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Eduka\\Helpers\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-eduka-helperss": true
+    }
+}
