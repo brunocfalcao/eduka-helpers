@@ -4,6 +4,69 @@ use Eduka\Cube\Models\Course;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
+use Laravel\Nova\Notifications\NovaNotification;
+
+if (! function_exists('eduka_route')) {
+    /**
+     * Generate a URL for the given named route with a specified domain.
+     *
+     * @param  string  $domain  The domain to use in the generated URL.
+     * @param  mixed  ...$args  The parameters for the route function.
+     * @return string
+     */
+    function eduka_route(...$args)
+    {
+        // Retrieve the domain from the app.url configuration variable
+        $appUrl = Config::get('app.url');
+        $parsedAppUrl = parse_url($appUrl);
+        $scheme = $parsedAppUrl['scheme'].'://';
+        $domain = $parsedAppUrl['host'];
+
+        // Include the port if specified in the app.url
+        if (isset($parsedAppUrl['port'])) {
+            $domain .= ':'.$parsedAppUrl['port'];
+        }
+
+        $routeUrl = route(...$args);
+
+        // Parse the generated route URL to get the path and query string
+        $parsedUrl = parse_url($routeUrl);
+        $path = $parsedUrl['path'] ?? '';
+        $query = isset($parsedUrl['query']) ? '?'.$parsedUrl['query'] : '';
+
+        // Return the URL with the domain from the configuration
+        return $scheme.rtrim($domain, '/').$path.$query;
+    }
+}
+
+if (! function_exists('override_app_url')) {
+    function override_app_url($domain)
+    {
+        $scheme = parse_url(request()->fullUrl())['scheme'];
+
+        config(['app.url' => $scheme.
+                             '://'.
+                             $domain]);
+    }
+}
+
+if (! function_exists('course_or_eduka_view')) {
+    function course_or_eduka_view($view)
+    {
+        return view()->exists("course::{$view}") ?
+            "course::{$view}" :
+            "eduka::{$view}";
+    }
+}
+
+if (! function_exists('course_or_backend_view')) {
+    function course_or_backend_view($view)
+    {
+        return view()->exists("backend::{$view}") ?
+            "backend::{$view}" :
+            "eduka::{$view}";
+    }
+}
 
 if (! function_exists('human_date')) {
     function human_date($value)
@@ -82,7 +145,11 @@ if (! function_exists('extract_host_from_url')) {
  */
 function eduka_url(?string $pathSuffix = null): string
 {
-    return env('APP_URL').'/'.Storage::url($pathSuffix);
+    $slash = str_starts_with(Storage::url($pathSuffix), '/') ||
+             str_ends_with(env('APP_URL'), '/') ?
+             '' : '/';
+
+    return env('APP_URL').$slash.Storage::url($pathSuffix);
 }
 
 function register_course_view_namespace(Course $course)
@@ -133,4 +200,31 @@ function eduka_mail_to(?Course $course = null)
 {
     // Get the admin user for the contextualized course.
     return $course->admin->email;
+}
+
+if (! function_exists('nova_notify')) {
+
+    /**
+     * @param  [type] $notifiable The model instance to notify
+     * @param  array  $params  ['message', 'action', 'icon', 'type']
+     * @return void
+     */
+    function nova_notify($notifiable, array $params)
+    {
+        if (class_exists(NovaNotification::class)) {
+            if ($notifiable) {
+                $notification = NovaNotification::make();
+
+                foreach (['message', 'action', 'icon', 'type'] as $key) {
+                    if (array_key_exists($key, $params)) {
+                        $notification->$key($params[$key]);
+                    }
+                }
+
+                $notifiable->notify($notification);
+            } else {
+                info('-- '.$params['message'].' --');
+            }
+        }
+    }
 }
