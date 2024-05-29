@@ -1,0 +1,44 @@
+{
+    "name": "brunocfalcao/eduka-helpers",
+    "description": "Eduka helpers",
+    "keywords": [
+        "brunocfalcao"
+    ],
+    "homepage": "https://github.com/brunocfalcao/brunocfalcao/eduka-helpers",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Bruno Falcão",
+            "email": "bruno.c.falcao@brunofalcao.me",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^10.0||^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Eduka\\Helpers\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Eduka\\Helpers\\HelpersServiceProvider"
+            ],
+            "aliases": {
+                "Eduka": "Eduka\\Helpers\\Facades\\Eduka"
+            }
+        }
+    }
+}
