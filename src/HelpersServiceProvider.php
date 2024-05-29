@@ -2,7 +2,6 @@
 
 namespace Eduka\Helpers;
 
-use Eduka\Helpers\Eduka;
 use Illuminate\Support\ServiceProvider;
 
 class HelpersServiceProvider extends ServiceProvider
