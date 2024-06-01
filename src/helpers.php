@@ -2,31 +2,27 @@
 
 use Eduka\Cube\Models\Course;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Laravel\Nova\Notifications\NovaNotification;
 
+/**
+ * Generate a URL for the given named route with a specified domain,
+ * but using the contextualized eduka context (as a course, as
+ * backend, etc). This function is useful when we are rendering
+ * views using a job that doesn't know what route() should be used.
+ */
 if (! function_exists('eduka_route')) {
-    /**
-     * Generate a URL for the given named route with a specified domain.
-     *
-     * @param  string  $domain  The domain to use in the generated URL.
-     * @param  mixed  ...$args  The parameters for the route function.
-     * @return string
-     */
-    function eduka_route(...$args)
+    function eduka_route($domain, ...$args)
     {
-        // Retrieve the domain from the app.url configuration variable
-        $appUrl = Config::get('app.url');
-        $parsedAppUrl = parse_url($appUrl);
-        $scheme = $parsedAppUrl['scheme'].'://';
-        $domain = $parsedAppUrl['host'];
+        // Retrieve the original app.url configuration variable
+        $originalAppUrl = Config::get('app.url');
+        $parsedOriginalUrl = parse_url($originalAppUrl);
 
-        // Include the port if specified in the app.url
-        if (isset($parsedAppUrl['port'])) {
-            $domain .= ':'.$parsedAppUrl['port'];
-        }
+        // Extract the scheme and port from the original app.url
+        $originalScheme = $parsedOriginalUrl['scheme'] ?? 'http';
+        $originalPort = isset($parsedOriginalUrl['port']) ? ':'.$parsedOriginalUrl['port'] : '';
 
+        // Generate the route URL using the original app.url
         $routeUrl = route(...$args);
 
         // Parse the generated route URL to get the path and query string
@@ -34,8 +30,12 @@ if (! function_exists('eduka_route')) {
         $path = $parsedUrl['path'] ?? '';
         $query = isset($parsedUrl['query']) ? '?'.$parsedUrl['query'] : '';
 
-        // Return the URL with the domain from the configuration
-        return $scheme.rtrim($domain, '/').$path.$query;
+        // Parse the provided domain
+        $parsedDomain = parse_url($domain);
+        $host = $parsedDomain['host'] ?? $domain;
+
+        // Return the URL with the scheme and port from the original app.url and the host from the provided domain
+        return $originalScheme.'://'.rtrim($host, '/').$originalPort.$path.$query;
     }
 }
 
@@ -50,20 +50,13 @@ if (! function_exists('override_app_url')) {
     }
 }
 
-if (! function_exists('course_or_eduka_view')) {
-    function course_or_eduka_view($view)
+if (! function_exists('eduka_view_or')) {
+    function eduka_view_or($view)
     {
-        return view()->exists("course::{$view}") ?
-            "course::{$view}" :
-            "eduka::{$view}";
-    }
-}
+        [$namespace, $view] = explode('::', $view);
 
-if (! function_exists('course_or_backend_view')) {
-    function course_or_backend_view($view)
-    {
-        return view()->exists("backend::{$view}") ?
-            "backend::{$view}" :
+        return view()->exists("{$namespace}::{$view}") ?
+            "{$namespace}::{$view}" :
             "eduka::{$view}";
     }
 }
@@ -139,20 +132,29 @@ if (! function_exists('extract_host_from_url')) {
     }
 }
 
-/**
- * Mostly used to render full urls on newsletters and jobs that
- * will render views that have a course contextualized somehow.
- */
-function eduka_url(?string $pathSuffix = null): string
-{
-    $slash = str_starts_with(Storage::url($pathSuffix), '/') ||
-             str_ends_with(env('APP_URL'), '/') ?
-             '' : '/';
+if (! function_exists('eduka_url')) {
+    function eduka_url(string $domain)
+    {
+        // Parse the APP_URL to get the scheme and port
+        $appUrl = parse_url(config('app.url'));
 
-    return env('APP_URL').$slash.Storage::url($pathSuffix);
+        // Parse the input domain to get its components
+        $domainParts = parse_url($domain);
+
+        // Construct the new URL with the scheme and port from APP_URL
+        $scheme = $appUrl['scheme'];
+        $host = $domainParts['host'] ?? '';
+        $port = isset($appUrl['port']) ? ':'.$appUrl['port'] : '';
+        $path = $domainParts['path'] ?? '';
+        $query = isset($domainParts['query']) ? '?'.$domainParts['query'] : '';
+        $fragment = isset($domainParts['fragment']) ? '#'.$domainParts['fragment'] : '';
+
+        // Combine the components into the final URL
+        return "{$scheme}://{$host}{$port}{$path}{$query}{$fragment}";
+    }
 }
 
-function register_course_view_namespace(Course $course)
+function push_course_view_namespace(Course $course)
 {
     try {
         // Create a ReflectionClass object for the class
@@ -171,13 +173,13 @@ function register_course_view_namespace(Course $course)
     }
 }
 
-function push_course_filesystem_driver(Course $course)
+function push_eduka_filesystem_disk(Course|Backend $model)
 {
     config([
-        'filesystems.disks.course' => [
+        'filesystems.disks.eduka' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/'.$course->canonical.'/'),
-            'url' => env('APP_URL').'/storage/'.$course->canonical.'/',
+            'root' => storage_path('app/public/'.$model->canonical.'/'),
+            'url' => env('APP_URL').'/storage/'.$model->canonical.'/',
             'visibility' => 'public',
             'throw' => false,
         ],
