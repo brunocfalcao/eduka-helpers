@@ -173,13 +173,13 @@ function push_course_view_namespace(Course $course)
     }
 }
 
-function push_eduka_filesystem_disk(Course|Backend $model)
+function push_canonical_filesystem_disk(string $canonical)
 {
     config([
-        'filesystems.disks.eduka' => [
+        "filesystems.disks.{$canonical}" => [
             'driver' => 'local',
-            'root' => storage_path('app/public/'.$model->canonical.'/'),
-            'url' => env('APP_URL').'/storage/'.$model->canonical.'/',
+            'root' => storage_path("app/public/{$canonical}/"),
+            'url' => env('APP_URL')."/storage/{$canonical}/",
             'visibility' => 'public',
             'throw' => false,
         ],
