@@ -45,7 +45,6 @@ function route_with_custom_domain($domain, ...$args)
  * Returns the passed view if it exists, or an eduka view on the same
  * namespace path.
  *
- * @param  string $view
  * @return View
  */
 function eduka_view_or(string $view)
@@ -60,7 +59,7 @@ function eduka_view_or(string $view)
 /**
  * Returns an human date, given the Carbon value passed.
  *
- * @param  mixed $value Carbon value or string
+ * @param  mixed  $value  Carbon value or string
  * @return string
  */
 function human_date($value)
@@ -76,7 +75,6 @@ function human_date($value)
 /**
  * Returns a human duration (days, hours passed) given the timestamp passed.
  *
- * @param  int $value
  * @return string
  */
 function human_duration(int $value)
@@ -151,7 +149,6 @@ function push_model_view_namespace(Course|Backend $model)
 /**
  * Pushes a new filesystem disk for the respective canonical value.
  *
- * @param  string $canonical
  * @return void
  */
 function push_canonical_filesystem_disk(string $canonical)
