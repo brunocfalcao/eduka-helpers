@@ -129,7 +129,7 @@ function push_model_view_namespace(Course|Backend $model)
 {
     try {
         // Create a ReflectionClass object for the class
-        $reflection = new ReflectionClass($course->provider_namespace);
+        $reflection = new ReflectionClass($model->provider_namespace);
 
         // Get the file name where the class is defined
         $filename = $reflection->getFileName();
