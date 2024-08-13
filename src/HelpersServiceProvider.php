@@ -9,7 +9,7 @@ class HelpersServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind('eduka-helper', function () {
-            return new Eduka();
+            return new Eduka;
         });
     }
 }
